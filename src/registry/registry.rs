@@ -50,4 +50,8 @@ impl EndpointRegistry {
       path: path.to_string(),
     });
   }
+
+  pub fn endpoints(&self) -> &HashMap<EndpointKey, EndpointResponse> {
+    &self.endpoints
+  }
 }

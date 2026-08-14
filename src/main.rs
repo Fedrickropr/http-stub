@@ -2,7 +2,9 @@ use http_stub::server::Server;
 
 #[tokio::main]
 async fn main() {
-  Server::new().await;
+  let server = Server::new().await;
+
+  server.run().await;
 
   print!("Shutting down, ran for TODOms");
 }

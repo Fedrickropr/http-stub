@@ -13,10 +13,16 @@ use crate::state::AppState;
 pub struct Server {
   pub address: String,
   state: AppState,
+  router: Router,
+  listener: TcpListener,
 }
 
 impl Server {
-  pub async fn start_from_registry(registry: EndpointRegistry) -> Server {
+  pub async fn new() -> Server {
+    Self::new_from_registry(EndpointRegistry::new()).await
+  }
+
+  pub async fn new_from_registry(registry: EndpointRegistry) -> Server {
     let state = AppState {
       registry: Arc::new(RwLock::new(registry)),
     };
@@ -29,15 +35,16 @@ impl Server {
       .fallback(any(Self::handle_request))
       .with_state(state.clone());
 
-    tokio::spawn(async move {
-      axum::serve(listener, router).await.unwrap();
-    });
-
-    Self { address, state }
+    Self {
+      address,
+      state,
+      router,
+      listener,
+    }
   }
 
-  pub async fn new() -> Server {
-    Self::start_from_registry(EndpointRegistry::new()).await
+  pub async fn run(self) {
+    axum::serve(self.listener, self.router).await.unwrap();
   }
 
   async fn handle_request(State(state): State<AppState>, request: Request) -> Response {
@@ -47,8 +54,8 @@ impl Server {
     let registry = state.registry.read().await;
 
     match registry.get(method, path) {
-      Some(endpoint) => (
-        StatusCode::from_u16(endpoint.response_code as u16).unwrap(),
+      Some(response) => (
+        StatusCode::from_u16(response.response_code as u16).unwrap(),
         "Hello, World!",
       )
         .into_response(),
