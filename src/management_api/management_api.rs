@@ -19,8 +19,8 @@ struct AddEndpointRequest {
 struct UpdateEndpointRequest {
   method: String,
   path: String,
-	response_code: u16,
-	body: String
+  response_code: u16,
+  body: String,
 }
 
 #[derive(Deserialize)]
@@ -35,7 +35,7 @@ pub struct Endpoint {
   pub path: String,
   pub method: String,
   pub response_code: u16,
-	pub body: Option<ResponseBody>
+  pub body: Option<ResponseBody>,
 }
 
 pub fn router() -> Router<AppState> {
@@ -56,7 +56,7 @@ async fn get_endpoint(State(state): State<AppState>) -> Json<Vec<Endpoint>> {
       method: key.method.clone(),
       path: key.path.clone(),
       response_code: response.response_code,
-			body: response.body.clone()
+      body: response.body.clone(),
     })
     .collect();
 
@@ -78,10 +78,14 @@ async fn add_endpoint_body(
   State(state): State<AppState>,
   Json(request): Json<UpdateEndpointRequest>,
 ) -> StatusCode {
-
   let mut registry = state.registry.write().await;
 
-  registry.add_with_string_body(&request.method, &request.path, request.response_code, &request.body);
+  registry.add_with_string_body(
+    &request.method,
+    &request.path,
+    request.response_code,
+    &request.body,
+  );
 
   StatusCode::CREATED
 }

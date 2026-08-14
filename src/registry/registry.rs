@@ -16,12 +16,12 @@ pub struct EndpointKey {
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct EndpointResponse {
   pub response_code: u16,
-	pub body: Option<ResponseBody>
+  pub body: Option<ResponseBody>,
 }
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub enum ResponseBody {
-    Text(String),
+  Text(String),
 }
 
 impl EndpointRegistry {
@@ -48,7 +48,7 @@ impl EndpointRegistry {
       },
       EndpointResponse {
         response_code: response_code,
-				body: Some(ResponseBody::Text(body.to_string()))
+        body: Some(ResponseBody::Text(body.to_string())),
       },
     );
   }
@@ -61,7 +61,7 @@ impl EndpointRegistry {
       },
       EndpointResponse {
         response_code: response_code,
-				body: None
+        body: None,
       },
     );
   }

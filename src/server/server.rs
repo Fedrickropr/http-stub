@@ -28,7 +28,7 @@ impl Server {
 
   pub async fn new_on_port(port: u16) -> Server {
     Self::new_from_registry_on_port(EndpointRegistry::new(), port).await
-	}
+  }
 
   pub async fn new_from_registry_on_port(registry: EndpointRegistry, port: u16) -> Server {
     let state = AppState {
@@ -64,19 +64,19 @@ impl Server {
     let registry = state.registry.read().await;
 
     match registry.get(method, path) {
-			Some(response) => Self::build_response(response),
+      Some(response) => Self::build_response(response),
       None => (StatusCode::OK, "Hello, World!").into_response(),
     }
   }
 
-	fn build_response(response: &EndpointResponse) -> Response {
+  fn build_response(response: &EndpointResponse) -> Response {
     let status = StatusCode::from_u16(response.response_code).unwrap();
 
     match &response.body {
-        Some(ResponseBody::Text(body)) => (status, body.clone()).into_response(),
-        None => (status, "").into_response()
+      Some(ResponseBody::Text(body)) => (status, body.clone()).into_response(),
+      None => (status, "").into_response(),
     }
-}
+  }
 
   pub async fn stop(&self) {
     !todo!()
