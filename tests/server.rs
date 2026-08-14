@@ -1,4 +1,5 @@
 use http_stub::{registry::EndpointRegistry, server::Server};
+use serde_json::json;
 
 #[tokio::test]
 async fn test_get_no_config() {
@@ -51,4 +52,32 @@ async fn test_multiple_paths() {
     .unwrap();
 
   assert_eq!(response.status(), 200);
+}
+
+#[tokio::test]
+async fn test_add_endpoint() {
+  let server = Server::new().await;
+
+  let client = reqwest::Client::new();
+
+  let response = client
+    .post(format!("http://{}/__stub/endpoints", server.address))
+    .json(&json!({
+        "method": "GET",
+        "path": "/hello",
+        "response_code": 400
+    }))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 201);
+
+  let response = client
+    .get(format!("http://{}/hello", server.address))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 400);
 }
