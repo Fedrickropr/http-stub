@@ -18,10 +18,9 @@ async function renderEndpoints() {
 		<span class="bold">${endpoint.responseCode}</span>
 
 		<button
-		class="expand-button"
+		class="expand-button ${endpoint.body ? "" : "expand-button-hidden"}"
 		type="button"
 		aria-expanded="false"
-		${endpoint.body ? "" : "hidden"}
 		>
 		▶
 		</button>

@@ -126,6 +126,10 @@ li span.method {
 	display: flex;
 }
 
+.expand-button-hidden {
+	visibility: hidden;
+}
+
 .endpoint .bold {
 	width: 100px;
 	font-size: 1.25rem;
