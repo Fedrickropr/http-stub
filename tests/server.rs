@@ -16,7 +16,7 @@ async fn test_one_path() {
   let mut registry = EndpointRegistry::new();
   registry.add("GET", "/hello", 400);
 
-  let server = Server::start(registry).await;
+  let server = Server::start_from_registry(registry).await;
 
   let response = reqwest::get(format!("http://{}/hello", server.address))
     .await
@@ -32,7 +32,7 @@ async fn test_multiple_paths() {
   registry.add("GET", "/goodbye", 401);
   registry.add("GET", "/helloagain", 200);
 
-  let server = Server::start(registry).await;
+  let server = Server::start_from_registry(registry).await;
 
   let response = reqwest::get(format!("http://{}/hello", server.address))
     .await

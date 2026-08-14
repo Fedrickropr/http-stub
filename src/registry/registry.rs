@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EndpointRegistry {
   endpoints: HashMap<EndpointKey, EndpointResponse>,
 }
 
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct EndpointKey {
   pub method: String,
   pub path: String,
 }
 
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct EndpointResponse {
   pub response_code: u32,
 }

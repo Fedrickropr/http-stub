@@ -1,9 +1,8 @@
-use axum::{Router, routing::get};
+use http_stub::server::Server;
 
 #[tokio::main]
 async fn main() {
-  let app = Router::new().route("/", get(|| async { "Hello, World!" }));
+  Server::new().await;
 
-  let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
-  axum::serve(listener, app).await.unwrap();
+  print!("Shutting down, ran for TODOms");
 }
