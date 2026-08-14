@@ -16,7 +16,10 @@ mod tests {
 
     assert_eq!(
       registry.get("GET", "/hello"),
-      Some(&EndpointResponse { response_code: 200 })
+      Some(&EndpointResponse {
+        response_code: 200,
+        body: None
+      })
     );
   }
 

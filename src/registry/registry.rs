@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Clone)]
 pub struct EndpointRegistry {
   endpoints: HashMap<EndpointKey, EndpointResponse>,
@@ -14,6 +16,12 @@ pub struct EndpointKey {
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct EndpointResponse {
   pub response_code: u16,
+	pub body: Option<ResponseBody>
+}
+
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
+pub enum ResponseBody {
+    Text(String),
 }
 
 impl EndpointRegistry {
@@ -32,6 +40,19 @@ impl EndpointRegistry {
     return self.endpoints.get(&key);
   }
 
+  pub fn add_with_string_body(&mut self, method: &str, path: &str, response_code: u16, body: &str) {
+    self.endpoints.insert(
+      EndpointKey {
+        method: method.to_string(),
+        path: path.to_string(),
+      },
+      EndpointResponse {
+        response_code: response_code,
+				body: Some(ResponseBody::Text(body.to_string()))
+      },
+    );
+  }
+
   pub fn add(&mut self, method: &str, path: &str, response_code: u16) {
     self.endpoints.insert(
       EndpointKey {
@@ -40,6 +61,7 @@ impl EndpointRegistry {
       },
       EndpointResponse {
         response_code: response_code,
+				body: None
       },
     );
   }

@@ -2,11 +2,11 @@ use axum::{
   Json, Router,
   extract::State,
   http::StatusCode,
-  routing::{delete, get, post},
+  routing::{delete, get, post, put},
 };
 use serde::{Deserialize, Serialize};
 
-use crate::state::AppState;
+use crate::{registry::ResponseBody, state::AppState};
 
 #[derive(Deserialize)]
 struct AddEndpointRequest {
@@ -15,6 +15,13 @@ struct AddEndpointRequest {
   response_code: u16,
 }
 
+#[derive(Deserialize)]
+struct UpdateEndpointRequest {
+  method: String,
+  path: String,
+	response_code: u16,
+	body: String
+}
 
 #[derive(Deserialize)]
 struct DeleteEndpointRequest {
@@ -28,12 +35,14 @@ pub struct Endpoint {
   pub path: String,
   pub method: String,
   pub response_code: u16,
+	pub body: Option<ResponseBody>
 }
 
 pub fn router() -> Router<AppState> {
   Router::new()
     .route("/__stub/endpoint", get(get_endpoint))
     .route("/__stub/endpoint", post(add_endpoint))
+    .route("/__stub/endpoint", put(add_endpoint_body))
     .route("/__stub/endpoint", delete(delete_endpoint))
 }
 
@@ -47,6 +56,7 @@ async fn get_endpoint(State(state): State<AppState>) -> Json<Vec<Endpoint>> {
       method: key.method.clone(),
       path: key.path.clone(),
       response_code: response.response_code,
+			body: response.body.clone()
     })
     .collect();
 
@@ -60,6 +70,18 @@ async fn add_endpoint(
   let mut registry = state.registry.write().await;
 
   registry.add(&request.method, &request.path, request.response_code);
+
+  StatusCode::CREATED
+}
+
+async fn add_endpoint_body(
+  State(state): State<AppState>,
+  Json(request): Json<UpdateEndpointRequest>,
+) -> StatusCode {
+
+  let mut registry = state.registry.write().await;
+
+  registry.add_with_string_body(&request.method, &request.path, request.response_code, &request.body);
 
   StatusCode::CREATED
 }

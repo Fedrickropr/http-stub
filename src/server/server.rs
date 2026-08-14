@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::RwLock;
 
-use crate::registry::EndpointRegistry;
+use crate::registry::{EndpointRegistry, EndpointResponse, ResponseBody};
 use crate::state::AppState;
 
 pub struct Server {
@@ -64,14 +64,19 @@ impl Server {
     let registry = state.registry.read().await;
 
     match registry.get(method, path) {
-      Some(response) => (
-        StatusCode::from_u16(response.response_code as u16).unwrap(),
-        "Hello, World!",
-      )
-        .into_response(),
+			Some(response) => Self::build_response(response),
       None => (StatusCode::OK, "Hello, World!").into_response(),
     }
   }
+
+	fn build_response(response: &EndpointResponse) -> Response {
+    let status = StatusCode::from_u16(response.response_code).unwrap();
+
+    match &response.body {
+        Some(ResponseBody::Text(body)) => (status, body.clone()).into_response(),
+        None => (status, "").into_response()
+    }
+}
 
   pub async fn stop(&self) {
     !todo!()

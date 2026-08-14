@@ -168,11 +168,13 @@ async fn test_get_endpoints() {
         method: "GET".to_string(),
         path: "/hello".to_string(),
         response_code: 200,
+				body: None
       },
       Endpoint {
         method: "POST".to_string(),
         path: "/users".to_string(),
         response_code: 201,
+				body: None
       },
     ]
   );
@@ -205,4 +207,39 @@ async fn test_server_on_specific_port() {
   tokio::spawn(async move {
     server.run().await;
   });
+}
+
+#[tokio::test]
+async fn test_endpoint_response_body() {
+  let mut registry = EndpointRegistry::new();
+  registry.add("GET", "/hello", 200);
+  registry.add("POST", "/users", 201);
+
+  let server = Server::new_from_registry(registry).await;
+  let address = server.address.clone();
+
+	tokio::spawn(server.run());
+
+  let client = reqwest::Client::new();
+
+	client.put(format!("http://{}/__stub/endpoint", address))
+    .json(&json!({
+        "method": "GET",
+        "path": "/hello",
+        "response_code": 401,
+				"body": "Stubstubstub"
+    }))
+		.send()
+		.await
+		.unwrap();
+
+	let response = reqwest::get(format!("http://{}/hello", address))
+		.await
+		.unwrap();
+
+	assert_eq!(response.status(), 401);
+
+	let body = response.text().await.unwrap();
+
+	assert_eq!(body, "Stubstubstub");
 }
