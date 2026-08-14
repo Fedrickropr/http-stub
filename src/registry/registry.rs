@@ -13,7 +13,7 @@ pub struct EndpointKey {
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct EndpointResponse {
-  pub response_code: u32,
+  pub response_code: u16,
 }
 
 impl EndpointRegistry {
@@ -32,7 +32,7 @@ impl EndpointRegistry {
     return self.endpoints.get(&key);
   }
 
-  pub fn add(&mut self, method: &str, path: &str, response_code: u32) {
+  pub fn add(&mut self, method: &str, path: &str, response_code: u16) {
     self.endpoints.insert(
       EndpointKey {
         method: method.to_string(),

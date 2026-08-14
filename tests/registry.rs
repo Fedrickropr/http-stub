@@ -14,7 +14,6 @@ mod tests {
 
     registry.add("GET", "/hello", 200);
 
-
     assert_eq!(
       registry.get("GET", "/hello"),
       Some(&EndpointResponse { response_code: 200 })
