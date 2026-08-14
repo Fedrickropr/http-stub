@@ -15,7 +15,14 @@ struct AddEndpointRequest {
   response_code: u16,
 }
 
-#[derive(Debug, Clone, Serialize)]
+
+#[derive(Deserialize)]
+struct DeleteEndpointRequest {
+  method: String,
+  path: String,
+}
+
+#[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Endpoint {
   pub path: String,
@@ -59,7 +66,7 @@ async fn add_endpoint(
 
 async fn delete_endpoint(
   State(state): State<AppState>,
-  Json(request): Json<AddEndpointRequest>,
+  Json(request): Json<DeleteEndpointRequest>,
 ) -> StatusCode {
   let mut registry = state.registry.write().await;
 

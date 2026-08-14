@@ -1,4 +1,4 @@
-use http_stub::{registry::EndpointRegistry, server::Server};
+use http_stub::{management_api::Endpoint, registry::EndpointRegistry, server::Server};
 use serde_json::json;
 
 #[tokio::test]
@@ -142,39 +142,67 @@ async fn test_add_del_endpoint() {
 
 #[tokio::test]
 async fn test_get_endpoints() {
-    let mut registry = EndpointRegistry::new();
-    registry.add("GET", "/hello", 200);
-    registry.add("POST", "/users", 201);
+  let mut registry = EndpointRegistry::new();
+  registry.add("GET", "/hello", 200);
+  registry.add("POST", "/users", 201);
 
-    let server = Server::new_from_registry(registry).await;
-    let address = server.address.clone();
+  let server = Server::new_from_registry(registry).await;
+  let address = server.address.clone();
 
-    tokio::spawn(server.run());
+  tokio::spawn(server.run());
 
-    let response = reqwest::get(format!(
-        "http://{}/__stub/endpoint",
-        address
-    ))
+  let response = reqwest::get(format!("http://{}/__stub/endpoint", address))
     .await
     .unwrap();
 
-    assert_eq!(response.status(), 200);
+  assert_eq!(response.status(), 200);
 
-    let body: serde_json::Value = response.json().await.unwrap();
+  let mut body: Vec<Endpoint> = response.json().await.unwrap();
 
-    assert_eq!(
-        body,
-        serde_json::json!([
-            {
-                "method": "GET",
-                "path": "/hello",
-                "responseCode": 200
-            },
-            {
-                "method": "POST",
-                "path": "/users",
-                "responseCode": 201
-            }
-        ])
-    );
+  body.sort_by(|a, b| a.path.cmp(&b.path));
+
+  assert_eq!(
+    body,
+    vec![
+      Endpoint {
+        method: "GET".to_string(),
+        path: "/hello".to_string(),
+        response_code: 200,
+      },
+      Endpoint {
+        method: "POST".to_string(),
+        path: "/users".to_string(),
+        response_code: 201,
+      },
+    ]
+  );
+}
+
+#[tokio::test]
+async fn test_get_endpoints_empty() {
+  let server = Server::new().await;
+  let address = server.address.clone();
+
+  tokio::spawn(server.run());
+
+  let response = reqwest::get(format!("http://{}/__stub/endpoint", address))
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  let body: Vec<Endpoint> = response.json().await.unwrap();
+
+  assert!(body.is_empty());
+}
+
+#[tokio::test]
+async fn test_server_on_specific_port() {
+  let server = Server::new_from_registry_on_port(EndpointRegistry::new(), 8080).await;
+
+  assert_eq!(server.address, "127.0.0.1:8080");
+
+  tokio::spawn(async move {
+    server.run().await;
+  });
 }

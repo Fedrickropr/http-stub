@@ -23,11 +23,21 @@ impl Server {
   }
 
   pub async fn new_from_registry(registry: EndpointRegistry) -> Server {
+    Self::new_from_registry_on_port(registry, 0).await
+  }
+
+  pub async fn new_on_port(port: u16) -> Server {
+    Self::new_from_registry_on_port(EndpointRegistry::new(), port).await
+	}
+
+  pub async fn new_from_registry_on_port(registry: EndpointRegistry, port: u16) -> Server {
     let state = AppState {
       registry: Arc::new(RwLock::new(registry)),
     };
 
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = TcpListener::bind(format!("127.0.0.1:{}", port))
+      .await
+      .unwrap();
     let address = listener.local_addr().unwrap().to_string();
     println!("Server address: {}", address);
 
