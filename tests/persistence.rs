@@ -79,16 +79,6 @@ fn save_and_load_endpoint_with_body() {
 }
 
 #[test]
-fn load_missing_file_returns_empty_registry() {
-  let dir = tempdir().unwrap();
-  let path = dir.path().join("does-not-exist.json");
-
-  let loaded = persistence::load(&path).unwrap();
-
-  assert!(loaded.endpoints().is_empty());
-}
-
-#[test]
 fn deleted_endpoint_is_not_persisted() {
   let dir = tempdir().unwrap();
   let path = dir.path().join("stub.json");

@@ -1,5 +1,5 @@
 use http_stub::{management_api::Endpoint, registry::EndpointRegistry, server::Server};
-use serde_json::json;
+use serde_json::{Value, json};
 
 #[tokio::test]
 async fn test_get_no_config() {
@@ -243,4 +243,55 @@ async fn test_endpoint_response_body() {
   let body = response.text().await.unwrap();
 
   assert_eq!(body, "Stubstubstub");
+}
+
+#[tokio::test]
+async fn export_empty_config() {
+  let server = Server::new().await;
+  let address = server.address.clone();
+
+  tokio::spawn(server.run());
+
+  let response = reqwest::get(format!("http://{}/__stub/config", address))
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  let body: Value = response.json().await.unwrap();
+
+  assert_eq!(body, serde_json::json!([]));
+}
+
+#[tokio::test]
+async fn export_config_with_endpoints() {
+  let mut registry = EndpointRegistry::new();
+
+  registry.add("GET", "/hello", 200);
+  registry.add("POST", "/users", 201);
+
+  let server = Server::new_from_registry(registry).await;
+  let address = server.address.clone();
+
+  tokio::spawn(server.run());
+
+  let response = reqwest::get(format!("http://{}/__stub/config", address))
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  let body: Value = response.json().await.unwrap();
+
+  let endpoints = body.as_array().unwrap();
+
+  assert_eq!(endpoints.len(), 2);
+
+  assert!(endpoints.iter().any(|endpoint| {
+    endpoint["method"] == "GET" && endpoint["path"] == "/hello" && endpoint["response_code"] == 200
+  }));
+
+  assert!(endpoints.iter().any(|endpoint| {
+    endpoint["method"] == "POST" && endpoint["path"] == "/users" && endpoint["response_code"] == 201
+  }));
 }

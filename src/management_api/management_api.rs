@@ -1,12 +1,14 @@
 use axum::{
   Json, Router,
+  body::Body,
   extract::State,
-  http::StatusCode,
+  http::{Response, StatusCode, header},
+  response::IntoResponse,
   routing::{delete, get, post, put},
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{registry::ResponseBody, state::AppState};
+use crate::{persistence, registry::ResponseBody, state::AppState};
 
 #[derive(Deserialize)]
 struct AddEndpointRequest {
@@ -44,6 +46,8 @@ pub fn router() -> Router<AppState> {
     .route("/__stub/endpoint", post(add_endpoint))
     .route("/__stub/endpoint", put(add_endpoint_body))
     .route("/__stub/endpoint", delete(delete_endpoint))
+    .route("/__stub/config", get(get_config))
+    .route("/__stub/config", put(put_config))
 }
 
 async fn get_endpoint(State(state): State<AppState>) -> Json<Vec<Endpoint>> {
@@ -99,4 +103,34 @@ async fn delete_endpoint(
   registry.delete(&request.method, &request.path);
 
   StatusCode::OK
+}
+
+async fn get_config(
+  State(state): State<AppState>
+) -> Response<Body> {
+  let registry = state.registry.read().await;
+
+  match persistence::serialize(&registry) {
+    Ok(json) => Response::builder()
+      .status(StatusCode::OK)
+      .header(header::CONTENT_TYPE, "application/json")
+      .body(Body::from(json))
+      .unwrap(),
+
+    Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+  }
+}
+
+async fn put_config(
+  State(state): State<AppState>,
+	body: String
+) -> StatusCode {
+  let registry = match persistence::deserialize(&body) {
+    Ok(registry) => registry,
+    Err(_) => return StatusCode::BAD_REQUEST,
+  };
+
+  *state.registry.write().await = registry;
+
+  StatusCode::NO_CONTENT
 }
