@@ -4,7 +4,7 @@ use http_stub::server::Server;
 async fn main() {
   let server = Server::new_on_port(8080).await;
 
-  server.run().await;
+	println!("Server address: {}", server.address);
 
-  print!("Shutting down, ran for TODOms");
+  server.run().await;
 }

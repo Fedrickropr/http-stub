@@ -118,7 +118,7 @@ li span.method {
 }
 
 .expand-button {
-	padding 1rem;
+	padding: 1rem;
 	justify-content: center;
 	min-height: 3rem;
 	min-width: 3rem;

@@ -1,4 +1,5 @@
 use axum::extract::Request;
+use axum::routing::get;
 use axum::{
   Router, extract::State, http::StatusCode, response::IntoResponse, response::Response,
   routing::any,
@@ -12,7 +13,6 @@ use crate::state::AppState;
 
 pub struct Server {
   pub address: String,
-  state: AppState,
   router: Router,
   listener: TcpListener,
 }
@@ -39,15 +39,15 @@ impl Server {
       .await
       .unwrap();
     let address = listener.local_addr().unwrap().to_string();
-    println!("Server address: {}", address);
 
     let router = crate::management_api::router()
+			.route("/", get(crate::frontend::index))
+			.route("/assets/{*path}", get(crate::frontend::asset))
       .fallback(any(Self::handle_request))
       .with_state(state.clone());
 
     Self {
       address,
-      state,
       router,
       listener,
     }
@@ -76,9 +76,5 @@ impl Server {
       Some(ResponseBody::Text(body)) => (status, body.clone()).into_response(),
       None => (status, "").into_response(),
     }
-  }
-
-  pub async fn stop(&self) {
-    !todo!()
   }
 }
