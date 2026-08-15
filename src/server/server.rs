@@ -41,8 +41,8 @@ impl Server {
     let address = listener.local_addr().unwrap().to_string();
 
     let router = crate::management_api::router()
-			.route("/", get(crate::frontend::index))
-			.route("/assets/{*path}", get(crate::frontend::asset))
+      .route("/", get(crate::frontend::index))
+      .route("/assets/{*path}", get(crate::frontend::asset))
       .fallback(any(Self::handle_request))
       .with_state(state.clone());
 
