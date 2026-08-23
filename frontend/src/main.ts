@@ -1,5 +1,6 @@
 import "./style.css";
 import { addEndpoint, addEndpointWithBody, deleteEndpoint, getEndpoints } from "./api/endpoints";
+import { exportConfig, importConfig } from "./api/config";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -18,7 +19,7 @@ async function renderEndpoints() {
 		<span class="bold">${endpoint.responseCode}</span>
 
 		<button
-		class="expand-button ${endpoint.body ? "" : "expand-button-hidden"}"
+		class="button-margin ${endpoint.body ? "" : "expand-button-hidden"}"
 		type="button"
 		aria-expanded="false"
 		>
@@ -26,7 +27,7 @@ async function renderEndpoints() {
 		</button>
 
 		<button
-		class="delete-button expand-button"
+		class="delete-button button-margin"
 		type="button"
 		data-method="${endpoint.method}"
 		data-path="${endpoint.path}"
@@ -87,48 +88,65 @@ async function main() {
 	<h1>HTTP Stub</h1>
 
 	<form id="add-endpoint-form">
-	<select id="method" name="method">
-	<option value="GET">GET</option>
-	<option value="POST">POST</option>
-	<option value="PUT">PUT</option>
-	<option value="PATCH">PATCH</option>
-	<option value="DELETE">DELETE</option>
-	<option value="HEAD">HEAD</option>
-	<option value="OPTIONS">OPTIONS</option>
+		<select id="method" name="method">
+		<option value="GET">GET</option>
+		<option value="POST">POST</option>
+		<option value="PUT">PUT</option>
+		<option value="PATCH">PATCH</option>
+		<option value="DELETE">DELETE</option>
+		<option value="HEAD">HEAD</option>
+		<option value="OPTIONS">OPTIONS</option>
 	</select>
 
 	<input
-	id="path"
-	name="path"
-	type="text"
-	placeholder="/hello"
-	pattern="/.*"
-	required
+		id="path"
+		name="path"
+		type="text"
+		placeholder="/hello"
+		pattern="/.*"
+		required
 	/>
 
 	<input
-	id="response-code"
-	name="response-code"
-	type="number"
-	min="100"
-	max="599"
-	step="1"
-	value="200"
-	required
+		id="response-code"
+		name="response-code"
+		type="number"
+		min="100"
+		max="599"
+		step="1"
+		value="200"
+		required
 	/>
 
 	<textarea
-	id="body"
-	name="body"
-	placeholder="Response body (optional)"
-	rows="4"
+		id="body"
+		name="body"
+		placeholder="Response body (optional)"
+		rows="4"
 	></textarea>
 
 
 	<button type="submit">
-	Add endpoint
+		Add endpoint
 	</button>
 	</form>
+
+	<div class="config-actions">
+		<button id="save-config-button" type="button">
+			Save config
+		</button>
+
+		<button id="load-config-button" type="button">
+			Load config
+		</button>
+
+		<input
+			id="config-file-input"
+			type="file"
+			accept=".json,application/json"
+			hidden
+		/>
+	</div>
 
 	<h2>Endpoints</h2>
 
@@ -166,6 +184,42 @@ async function main() {
 	});
 
 	await renderEndpoints();
+	
+
+	const saveButton = document.querySelector<HTMLButtonElement>("#save-config-button")!;
+
+	const loadButton = document.querySelector<HTMLButtonElement>("#load-config-button")!;
+
+	const fileInput = document.querySelector<HTMLInputElement>("#config-file-input")!;
+
+	saveButton.addEventListener("click", async () => {
+		const blob = await exportConfig();
+
+		const url = URL.createObjectURL(blob);
+
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = "http-stub.json";
+		link.click();
+
+		URL.revokeObjectURL(url);
+	});
+
+	loadButton.addEventListener("click", () => {
+		fileInput.click();
+	});
+
+	fileInput.addEventListener("change", async () => {
+		const file = fileInput.files?.[0];
+
+		if (!file) return;
+
+		await importConfig(file);
+
+		fileInput.value = "";
+
+		await renderEndpoints();
+	});
 }
 
 main();
