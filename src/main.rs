@@ -1,10 +1,12 @@
-use http_stub::server::Server;
+use http_stub::{cli::parse_port, server::Server};
 
 #[tokio::main]
 async fn main() {
-  let server = Server::new_on_port(8080).await;
+	let port = parse_port(std::env::args().nth(1));
 
-  println!("Server address: {}", server.address);
+  let server = Server::new_on_port(port).await;
+
+  println!("Management interface available at http://{}", server.address);
 
   server.run().await;
 }
