@@ -8,7 +8,11 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{persistence, registry::{ResponseBody, ResponseHeader}, state::AppState};
+use crate::{
+  persistence,
+  registry::{ResponseBody, ResponseHeader},
+  state::AppState,
+};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,7 +45,7 @@ pub struct Endpoint {
   pub method: String,
   pub response_code: u16,
   pub body: Option<ResponseBody>,
-	pub headers: Vec<ResponseHeader>	
+  pub headers: Vec<ResponseHeader>,
 }
 
 #[derive(Deserialize)]
@@ -50,7 +54,7 @@ struct AddHeaderRequest {
   key: String,
   value: String,
   method: String,
-  path: String
+  path: String,
 }
 
 pub fn router() -> Router<AppState> {
@@ -75,7 +79,7 @@ async fn get_endpoint(State(state): State<AppState>) -> Json<Vec<Endpoint>> {
       path: key.path.clone(),
       response_code: response.response_code,
       body: response.body.clone(),
-			headers: response.headers.clone()
+      headers: response.headers.clone(),
     })
     .collect();
 
@@ -147,16 +151,11 @@ async fn put_config(State(state): State<AppState>, body: String) -> StatusCode {
 
 async fn put_header(
   State(state): State<AppState>,
-  Json(request): Json<AddHeaderRequest>
+  Json(request): Json<AddHeaderRequest>,
 ) -> StatusCode {
   let mut registry = state.registry.write().await;
 
-  match registry.add_header(
-    &request.method,
-    &request.path,
-    &request.key,
-    &request.value,
-  ) {
+  match registry.add_header(&request.method, &request.path, &request.key, &request.value) {
     Ok(()) => StatusCode::CREATED,
     Err(_) => StatusCode::NOT_FOUND,
   }
