@@ -18,7 +18,7 @@ fn get_single() {
     Some(&EndpointResponse {
       response_code: 200,
       body: None,
-			headers: vec!()
+      headers: vec!()
     })
   );
 }
@@ -109,5 +109,10 @@ fn add_header_invalid_endpoint() {
   registry.add("GET", "/hello", 200);
   let err = registry.add_header("GET", "/not_hello", "Content-Type", "application/json");
 
-	assert_eq!(err, Err(RegistryError { message: "Endpoint not found in registry.".to_string() }));
+  assert_eq!(
+    err,
+    Err(RegistryError {
+      message: "Endpoint not found in registry.".to_string()
+    })
+  );
 }
