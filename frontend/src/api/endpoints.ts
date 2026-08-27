@@ -1,13 +1,13 @@
 import type { Endpoint } from "../models/endpoint";
 
 export async function getEndpoints(): Promise<Endpoint[]> {
-  const response = await fetch("/__stub/endpoint");
+	const response = await fetch("/__stub/endpoint");
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch endpoints: ${response.status}`);
-  }
+	if (!response.ok) {
+		throw new Error(`Failed to fetch endpoints: ${response.status}`);
+	}
 
-  return response.json();
+	return response.json();
 }
 
 export async function addEndpoint(
@@ -23,7 +23,7 @@ export async function addEndpoint(
 		body: JSON.stringify({
 			method,
 			path,
-			response_code: responseCode,
+			responseCode: responseCode,
 		}),
 	});
 }
@@ -42,28 +42,28 @@ export async function addEndpointWithBody(
 		body: JSON.stringify({
 			method,
 			path,
-			response_code: responseCode,
+			responseCode: responseCode,
 			body,
 		}),
 	});
 }
 
 export async function deleteEndpoint(
-  method: string,
-  path: string,
+	method: string,
+	path: string,
 ): Promise<void> {
-  const response = await fetch("/__stub/endpoint", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      method,
-      path,
-    }),
-  });
+	const response = await fetch("/__stub/endpoint", {
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			method,
+			path,
+		}),
+	});
 
-  if (!response.ok) {
-    throw new Error(`Failed to delete endpoint: ${response.status}`);
-  }
+	if (!response.ok) {
+		throw new Error(`Failed to delete endpoint: ${response.status}`);
+	}
 }

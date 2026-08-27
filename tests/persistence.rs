@@ -38,6 +38,7 @@ fn save_and_load_many_endpoints() {
     Some(&EndpointResponse {
       response_code: 200,
       body: None,
+			headers: vec!()
     })
   );
 
@@ -46,6 +47,7 @@ fn save_and_load_many_endpoints() {
     Some(&EndpointResponse {
       response_code: 201,
       body: None,
+			headers: vec!()
     })
   );
 
@@ -54,6 +56,7 @@ fn save_and_load_many_endpoints() {
     Some(&EndpointResponse {
       response_code: 204,
       body: None,
+			headers: vec!()
     })
   );
 }
@@ -74,6 +77,7 @@ fn save_and_load_endpoint_with_body() {
     Some(&EndpointResponse {
       response_code: 200,
       body: Some(ResponseBody::Text("Hello world".to_string())),
+			headers: vec!()
     })
   );
 }
