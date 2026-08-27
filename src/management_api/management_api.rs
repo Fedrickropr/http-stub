@@ -8,9 +8,10 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{persistence, registry::ResponseBody, state::AppState};
+use crate::{persistence, registry::{ResponseBody, ResponseHeader}, state::AppState};
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct AddEndpointRequest {
   method: String,
   path: String,
@@ -18,6 +19,7 @@ struct AddEndpointRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct UpdateEndpointRequest {
   method: String,
   path: String,
@@ -26,6 +28,7 @@ struct UpdateEndpointRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct DeleteEndpointRequest {
   method: String,
   path: String,
@@ -38,6 +41,16 @@ pub struct Endpoint {
   pub method: String,
   pub response_code: u16,
   pub body: Option<ResponseBody>,
+	pub headers: Vec<ResponseHeader>	
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AddHeaderRequest {
+  key: String,
+  value: String,
+  method: String,
+  path: String
 }
 
 pub fn router() -> Router<AppState> {
@@ -48,6 +61,7 @@ pub fn router() -> Router<AppState> {
     .route("/__stub/endpoint", delete(delete_endpoint))
     .route("/__stub/config", get(get_config))
     .route("/__stub/config", put(put_config))
+    .route("/__stub/header", put(put_header))
 }
 
 async fn get_endpoint(State(state): State<AppState>) -> Json<Vec<Endpoint>> {
@@ -61,6 +75,7 @@ async fn get_endpoint(State(state): State<AppState>) -> Json<Vec<Endpoint>> {
       path: key.path.clone(),
       response_code: response.response_code,
       body: response.body.clone(),
+			headers: response.headers.clone()
     })
     .collect();
 
@@ -105,9 +120,7 @@ async fn delete_endpoint(
   StatusCode::OK
 }
 
-async fn get_config(
-  State(state): State<AppState>
-) -> Response<Body> {
+async fn get_config(State(state): State<AppState>) -> Response<Body> {
   let registry = state.registry.read().await;
 
   match persistence::serialize(&registry) {
@@ -121,10 +134,7 @@ async fn get_config(
   }
 }
 
-async fn put_config(
-  State(state): State<AppState>,
-	body: String
-) -> StatusCode {
+async fn put_config(State(state): State<AppState>, body: String) -> StatusCode {
   let registry = match persistence::deserialize(&body) {
     Ok(registry) => registry,
     Err(_) => return StatusCode::BAD_REQUEST,
@@ -133,4 +143,21 @@ async fn put_config(
   *state.registry.write().await = registry;
 
   StatusCode::NO_CONTENT
+}
+
+async fn put_header(
+  State(state): State<AppState>,
+  Json(request): Json<AddHeaderRequest>
+) -> StatusCode {
+  let mut registry = state.registry.write().await;
+
+  match registry.add_header(
+    &request.method,
+    &request.path,
+    &request.key,
+    &request.value,
+  ) {
+    Ok(()) => StatusCode::CREATED,
+    Err(_) => StatusCode::NOT_FOUND,
+  }
 }

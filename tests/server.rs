@@ -1,4 +1,8 @@
-use http_stub::{management_api::Endpoint, registry::EndpointRegistry, server::Server};
+use http_stub::{
+  management_api::Endpoint,
+  registry::{EndpointRegistry, ResponseHeader},
+  server::Server,
+};
 use serde_json::{Value, json};
 
 #[tokio::test]
@@ -77,7 +81,7 @@ async fn test_add_endpoint() {
     .json(&json!({
         "method": "GET",
         "path": "/hello",
-        "response_code": 400
+        "responseCode": 400
     }))
     .send()
     .await
@@ -108,7 +112,7 @@ async fn test_add_del_endpoint() {
     .json(&json!({
         "method": "GET",
         "path": "/hello",
-        "response_code": 400
+        "responseCode": 400
     }))
     .send()
     .await
@@ -125,7 +129,7 @@ async fn test_add_del_endpoint() {
     .json(&json!({
         "method": "GET",
         "path": "/hello",
-        "response_code": 200
+        "responseCode": 200
     }))
     .send()
     .await
@@ -168,13 +172,15 @@ async fn test_get_endpoints() {
         method: "GET".to_string(),
         path: "/hello".to_string(),
         response_code: 200,
-        body: None
+        body: None,
+        headers: vec!()
       },
       Endpoint {
         method: "POST".to_string(),
         path: "/users".to_string(),
         response_code: 201,
-        body: None
+        body: None,
+        headers: vec!()
       },
     ]
   );
@@ -227,7 +233,7 @@ async fn test_endpoint_response_body() {
     .json(&json!({
         "method": "GET",
         "path": "/hello",
-        "response_code": 401,
+        "responseCode": 401,
         "body": "Stubstubstub"
     }))
     .send()
@@ -294,4 +300,65 @@ async fn export_config_with_endpoints() {
   assert!(endpoints.iter().any(|endpoint| {
     endpoint["method"] == "POST" && endpoint["path"] == "/users" && endpoint["response_code"] == 201
   }));
+}
+
+#[tokio::test]
+async fn test_add_header() {
+  let server = Server::new().await;
+  let address = server.address.clone();
+
+  tokio::spawn(server.run());
+
+  let client = reqwest::Client::new();
+
+  let response = client
+    .post(format!("http://{}/__stub/endpoint", address))
+    .json(&json!({
+        "method": "GET",
+        "path": "/hello",
+        "responseCode": 400
+    }))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 201);
+
+  let response = client
+    .put(format!("http://{}/__stub/header", address))
+    .json(&json!({
+        "method": "GET",
+        "path": "/hello",
+        "key": "Content-Type",
+        "value": "application/json"
+    }))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 201);
+
+  let response = reqwest::get(format!("http://{}/__stub/endpoint", address))
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  let mut body: Vec<Endpoint> = response.json().await.unwrap();
+
+  body.sort_by(|a, b| a.path.cmp(&b.path));
+
+  assert_eq!(
+    body,
+    vec![Endpoint {
+      method: "GET".to_string(),
+      path: "/hello".to_string(),
+      response_code: 400,
+      body: None,
+      headers: vec![ResponseHeader {
+        key: "Content-Type".to_string(),
+        value: "application/json".to_string()
+      }]
+    },]
+  );
 }

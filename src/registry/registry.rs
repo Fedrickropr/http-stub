@@ -17,11 +17,23 @@ pub struct EndpointKey {
 pub struct EndpointResponse {
   pub response_code: u16,
   pub body: Option<ResponseBody>,
+	pub headers: Vec<ResponseHeader>
 }
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub enum ResponseBody {
   Text(String),
+}
+
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
+pub struct ResponseHeader {
+	pub key: String,
+	pub value: String
+}
+
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
+pub struct RegistryError {
+	pub message: String
 }
 
 impl EndpointRegistry {
@@ -40,6 +52,10 @@ impl EndpointRegistry {
     return self.endpoints.get(&key);
   }
 
+  pub fn endpoints(&self) -> &HashMap<EndpointKey, EndpointResponse> {
+    &self.endpoints
+  }
+
   pub fn add_with_string_body(&mut self, method: &str, path: &str, response_code: u16, body: &str) {
     self.endpoints.insert(
       EndpointKey {
@@ -49,6 +65,7 @@ impl EndpointRegistry {
       EndpointResponse {
         response_code: response_code,
         body: Some(ResponseBody::Text(body.to_string())),
+				headers: Vec::new()
       },
     );
   }
@@ -62,9 +79,26 @@ impl EndpointRegistry {
       EndpointResponse {
         response_code: response_code,
         body: None,
+				headers: Vec::new()
       },
     );
   }
+
+  pub fn add_header(&mut self, method: &str, path: &str, key: &str, value: &str) -> Result<(), RegistryError> {
+    let endpoint_key = EndpointKey {
+      method: method.to_string(),
+      path: path.to_string(),
+    };
+		
+		let response = match self.endpoints.get_mut(&endpoint_key) {
+			Some(response) => response,
+			None => Err(RegistryError { message: "Endpoint not found in registry.".to_string() })?
+		};
+
+		response.headers.push(ResponseHeader{key: key.to_string(), value: value.to_string()});
+
+		Ok(())
+	}
 
   pub fn delete(&mut self, method: &str, path: &str) {
     self.endpoints.remove(&EndpointKey {
@@ -73,7 +107,4 @@ impl EndpointRegistry {
     });
   }
 
-  pub fn endpoints(&self) -> &HashMap<EndpointKey, EndpointResponse> {
-    &self.endpoints
-  }
 }
