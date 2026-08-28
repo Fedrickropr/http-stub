@@ -99,3 +99,25 @@ export async function deleteEndpoint(
     throw new Error(`Failed to delete endpoint: ${response.status}`);
   }
 }
+
+export async function deleteEndpointHeader(
+  method: string,
+  path: string,
+  key: string 
+): Promise<void> {
+  const response = await fetch("/__stub/header", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      method,
+      path,
+      key
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete endpoint: ${response.status}`);
+  }
+}
