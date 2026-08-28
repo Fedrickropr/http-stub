@@ -57,6 +57,14 @@ struct AddHeaderRequest {
   path: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteHeaderRequest {
+  method: String,
+  path: String,
+  key: String
+}
+
 pub fn router() -> Router<AppState> {
   Router::new()
     .route("/__stub/endpoint", get(get_endpoint))
@@ -66,6 +74,7 @@ pub fn router() -> Router<AppState> {
     .route("/__stub/config", get(get_config))
     .route("/__stub/config", put(put_config))
     .route("/__stub/header", put(put_header))
+    .route("/__stub/header", delete(delete_header))
 }
 
 async fn get_endpoint(State(state): State<AppState>) -> Json<Vec<Endpoint>> {
@@ -157,6 +166,18 @@ async fn put_header(
 
   match registry.add_header(&request.method, &request.path, &request.key, &request.value) {
     Ok(()) => StatusCode::CREATED,
+    Err(_) => StatusCode::NOT_FOUND,
+  }
+}
+
+async fn delete_header(
+  State(state): State<AppState>,
+  Json(request): Json<DeleteHeaderRequest>,
+) -> StatusCode {
+  let mut registry = state.registry.write().await;
+
+  match registry.delete_header(&request.method, &request.path, &request.key) {
+    Ok(()) => StatusCode::OK,
     Err(_) => StatusCode::NOT_FOUND,
   }
 }
