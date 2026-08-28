@@ -57,17 +57,27 @@ impl EndpointRegistry {
   }
 
   pub fn add_with_string_body(&mut self, method: &str, path: &str, response_code: u16, body: &str) {
-    self.endpoints.insert(
-      EndpointKey {
+		let key = EndpointKey {
         method: method.to_string(),
-        path: path.to_string(),
-      },
-      EndpointResponse {
-        response_code: response_code,
-        body: Some(ResponseBody::Text(body.to_string())),
-        headers: Vec::new(),
-      },
-    );
+        path: path.to_string()
+      };
+
+		match self.endpoints.get_mut(&key) {
+			Some(endpoint) => {
+				endpoint.body = Some(ResponseBody::Text(body.to_string()));
+				endpoint.response_code = response_code;
+			},
+			None => _ = self.endpoints.insert(
+				EndpointKey {
+					method: method.to_string(),
+					path: path.to_string(),
+				},
+				EndpointResponse {
+					response_code: response_code,
+					body: Some(ResponseBody::Text(body.to_string())),
+					headers: Vec::new()
+				})
+		};
   }
 
   pub fn add(&mut self, method: &str, path: &str, response_code: u16) {
@@ -107,6 +117,30 @@ impl EndpointRegistry {
       key: key.to_string(),
       value: value.to_string(),
     });
+
+    Ok(())
+  }
+
+  pub fn delete_header(
+    &mut self,
+    method: &str,
+    path: &str,
+    key: &str,
+  ) -> Result<(), RegistryError> {
+    let endpoint_key = EndpointKey {
+      method: method.to_string(),
+      path: path.to_string(),
+    };
+
+    let response = match self.endpoints.get_mut(&endpoint_key) {
+      Some(response) => response,
+      None => Err(RegistryError {
+        message: "Endpoint not found in registry.".to_string(),
+      })?,
+    };
+
+		let index = response.headers.iter().position(|x| x.key == key).unwrap();
+		response.headers.remove(index);
 
     Ok(())
   }
