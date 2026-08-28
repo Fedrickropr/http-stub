@@ -15,7 +15,7 @@ export async function addEndpoint(
   path: string,
   responseCode: number,
 ): Promise<void> {
-  await fetch("/__stub/endpoint", {
+  let response = await fetch("/__stub/endpoint", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -26,6 +26,10 @@ export async function addEndpoint(
       responseCode: responseCode,
     }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete endpoint: ${response.status}`);
+  }
 }
 
 export async function addEndpointWithBody(
@@ -34,7 +38,7 @@ export async function addEndpointWithBody(
   responseCode: number,
   body: string,
 ): Promise<void> {
-  await fetch("/__stub/endpoint", {
+  let response = await fetch("/__stub/endpoint", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -46,6 +50,34 @@ export async function addEndpointWithBody(
       body,
     }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete endpoint: ${response.status}`);
+  }
+}
+
+export async function addEndpointHeader(
+  method: string,
+  path: string,
+  key: string,
+  value: string,
+): Promise<void> {
+  let response = await fetch("/__stub/header", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      method,
+      path,
+      key: key,
+      value: value
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete endpoint: ${response.status}`);
+  }
 }
 
 export async function deleteEndpoint(

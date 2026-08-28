@@ -5,4 +5,10 @@ export interface Endpoint {
 	body?: {
 		Text: String
 	}
+	headers: Header[]
+}
+
+export interface Header {
+	key: string;
+	value: string;
 }
