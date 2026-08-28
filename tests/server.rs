@@ -294,11 +294,11 @@ async fn export_config_with_endpoints() {
   assert_eq!(endpoints.len(), 2);
 
   assert!(endpoints.iter().any(|endpoint| {
-    endpoint["method"] == "GET" && endpoint["path"] == "/hello" && endpoint["response_code"] == 200
+    endpoint["method"] == "GET" && endpoint["path"] == "/hello" && endpoint["responseCode"] == 200
   }));
 
   assert!(endpoints.iter().any(|endpoint| {
-    endpoint["method"] == "POST" && endpoint["path"] == "/users" && endpoint["response_code"] == 201
+    endpoint["method"] == "POST" && endpoint["path"] == "/users" && endpoint["responseCode"] == 201
   }));
 }
 
@@ -362,7 +362,6 @@ async fn test_add_header() {
     },]
   );
 }
-
 
 #[tokio::test]
 async fn test_del_header() {
@@ -432,5 +431,67 @@ async fn test_del_header() {
       body: None,
       headers: vec!()
     },]
+  );
+}
+
+#[tokio::test]
+async fn test_endpoint_returns_header() {
+  let mut registry = EndpointRegistry::new();
+
+  registry.add("GET", "/hello", 200);
+  registry
+    .add_header("GET", "/hello", "X-Test", "hello")
+    .unwrap();
+
+  let server = Server::new_from_registry(registry).await;
+  let address = server.address.clone();
+
+  tokio::spawn(server.run());
+
+  let response = reqwest::get(format!("http://{}/hello", address))
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  assert_eq!(
+    response.headers().get("X-Test").unwrap(),
+    "hello"
+  );
+}
+
+#[tokio::test]
+async fn test_endpoint_returns_multiple_headers() {
+  let mut registry = EndpointRegistry::new();
+
+  registry.add("GET", "/hello", 200);
+
+  registry
+    .add_header("GET", "/hello", "Content-Type", "application/json")
+    .unwrap();
+
+  registry
+    .add_header("GET", "/hello", "X-Test", "hello")
+    .unwrap();
+
+  let server = Server::new_from_registry(registry).await;
+  let address = server.address.clone();
+
+  tokio::spawn(server.run());
+
+  let response = reqwest::get(format!("http://{}/hello", address))
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  assert_eq!(
+    response.headers().get("Content-Type").unwrap(),
+    "application/json"
+  );
+
+  assert_eq!(
+    response.headers().get("X-Test").unwrap(),
+    "hello"
   );
 }

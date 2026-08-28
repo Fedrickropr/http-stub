@@ -128,7 +128,7 @@ async function renderEndpoints() {
     "#update-body-form",
   )!;
 
-  formUpdateBody.addEventListener("submit", async event => {
+  formUpdateBody?.addEventListener("submit", async event => {
     event.preventDefault();
 
     const formData = new FormData(formUpdateBody);
@@ -150,7 +150,7 @@ async function renderEndpoints() {
     "#add-header-form",
   )!;
 
-  formAddHeader.addEventListener("submit", async event => {
+  formAddHeader?.addEventListener("submit", async event => {
     event.preventDefault();
 
     const formData = new FormData(formAddHeader);
