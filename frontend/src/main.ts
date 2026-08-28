@@ -1,5 +1,5 @@
 import "./style.css";
-import { addEndpoint, addEndpointHeader, addEndpointWithBody, deleteEndpoint, getEndpoints } from "./api/endpoints";
+import { addEndpoint, addEndpointHeader, addEndpointWithBody, deleteEndpoint, deleteEndpointHeader, getEndpoints } from "./api/endpoints";
 import { exportConfig, importConfig } from "./api/config";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -33,7 +33,7 @@ async function renderEndpoints() {
 		data-path="${endpoint.path}"
 		title="Delete endpoint"
 		>
-		  X
+      &#10006
 		</button>
 
 		</div>
@@ -66,7 +66,10 @@ async function renderEndpoints() {
       <input readonly class="row-item" name="key" value=${header.key}> </input>
       <input readonly class="row-item" name="value" value=${header.value}> </input>
       <button 
-        type="submit"
+        class="delete-header-button"
+        data-method="${endpoint.method}"
+        data-path="${endpoint.path}"
+        data-key="${header.key}"
         > 
         &#10006
       </button>
@@ -117,6 +120,21 @@ async function renderEndpoints() {
       await deleteEndpoint(
         button.dataset.method!,
         button.dataset.path!,
+      );
+
+      await renderEndpoints();
+    });
+  });
+
+  list.querySelectorAll<HTMLButtonElement>(".delete-header-button").forEach(button => {
+    button.addEventListener("click", async event => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      await deleteEndpointHeader(
+        button.dataset.method!,
+        button.dataset.path!,
+        button.dataset.key!
       );
 
       await renderEndpoints();
