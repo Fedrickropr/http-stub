@@ -116,3 +116,17 @@ fn add_header_invalid_endpoint() {
     })
   );
 }
+
+#[test]
+fn add_delete_header() {
+  let mut registry = EndpointRegistry::new();
+
+  registry.add("GET", "/hello", 200);
+
+  let _ = registry.add_header("GET", "/hello", "Content-Type", "application/json");
+  let _ = registry.delete_header("GET", "/hello", "Content-Type");
+
+  let response = registry.get("GET", "/hello").unwrap();
+
+  assert_eq!(response.headers.len(), 0);
+}

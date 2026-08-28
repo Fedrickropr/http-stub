@@ -362,3 +362,75 @@ async fn test_add_header() {
     },]
   );
 }
+
+
+#[tokio::test]
+async fn test_del_header() {
+  let server = Server::new().await;
+  let address = server.address.clone();
+
+  tokio::spawn(server.run());
+
+  let client = reqwest::Client::new();
+
+  let response = client
+    .post(format!("http://{}/__stub/endpoint", address))
+    .json(&json!({
+        "method": "GET",
+        "path": "/hello",
+        "responseCode": 400
+    }))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 201);
+
+  let response = client
+    .put(format!("http://{}/__stub/header", address))
+    .json(&json!({
+        "method": "GET",
+        "path": "/hello",
+        "key": "Content-Type",
+        "value": "application/json"
+    }))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 201);
+
+  let response = client
+    .delete(format!("http://{}/__stub/header", address))
+    .json(&json!({
+        "method": "GET",
+        "path": "/hello",
+        "key": "Content-Type"
+    }))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  let response = reqwest::get(format!("http://{}/__stub/endpoint", address))
+    .await
+    .unwrap();
+
+  assert_eq!(response.status(), 200);
+
+  let mut body: Vec<Endpoint> = response.json().await.unwrap();
+
+  body.sort_by(|a, b| a.path.cmp(&b.path));
+
+  assert_eq!(
+    body,
+    vec![Endpoint {
+      method: "GET".to_string(),
+      path: "/hello".to_string(),
+      response_code: 400,
+      body: None,
+      headers: vec!()
+    },]
+  );
+}

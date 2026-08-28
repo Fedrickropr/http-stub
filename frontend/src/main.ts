@@ -1,29 +1,29 @@
 import "./style.css";
-import { addEndpoint, addEndpointWithBody, deleteEndpoint, getEndpoints } from "./api/endpoints";
+import { addEndpoint, addEndpointHeader, addEndpointWithBody, deleteEndpoint, getEndpoints } from "./api/endpoints";
 import { exportConfig, importConfig } from "./api/config";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 async function renderEndpoints() {
-	const endpoints = await getEndpoints();
+  const endpoints = await getEndpoints();
 
-	const list = document.querySelector<HTMLUListElement>("#endpoint-list")!;
-	list.innerHTML = endpoints
-	.map(
-		endpoint => `
-		<li class="endpoint">
-		<div class="endpoint-header">
-
-		<span class="bold">${endpoint.method}</span>
-		<span class="path">${endpoint.path}</span>
-		<span class="bold">${endpoint.responseCode}</span>
+  const list = document.querySelector<HTMLUListElement>("#endpoint-list")!;
+  list.innerHTML = endpoints
+    .map(
+      endpoint => `
+    <li class="endpoint">
+		  <div class="endpoint-header">
+  
+		  <span class="bold">${endpoint.method}</span>
+		  <span class="path">${endpoint.path}</span>
+		  <span class="bold">${endpoint.responseCode}</span>
 
 		<button
-		class="expand-button button-margin ${endpoint.body ? "" : "expand-button-hidden"}"
+		class="expand-button button-margin"
 		type="button"
 		aria-expanded="false"
 		>
-		▶
+		  ▶
 		</button>
 
 		<button
@@ -33,61 +33,149 @@ async function renderEndpoints() {
 		data-path="${endpoint.path}"
 		title="Delete endpoint"
 		>
-		X
+		  X
 		</button>
 
 		</div>
 
-		${
-			endpoint.body
-				? `
-				<div class="endpoint-body" hidden>
-				<textarea readonly>${endpoint.body.Text}</textarea>
-				</div>
-				`
-					: ""
-		}
+		
+    <div 
+    class="endpoint-body" 
+    hidden>
+      <form class="row"
+      data-method="${endpoint.method}"
+      data-path="${endpoint.path}"
+      data-responsecode="${endpoint.responseCode}"
+      id="update-body-form" 
+      >
+			  <textarea id="body" name="body">${endpoint.body ? endpoint.body.Text : ""}</textarea>
+        <button 
+        class="row-item"
+        type ="submit"
+        class="button-margin"
+        > 
+          Update
+        </button>
+      </form>
+    
+    <h2>Headers</h2>
+    ${endpoint.headers.map(header => `
+    <div
+    class="row"
+    >
+      <input readonly class="row-item" name="key" value=${header.key}> </input>
+      <input readonly class="row-item" name="value" value=${header.value}> </input>
+      <button 
+        type="submit"
+        > 
+        &#10006
+      </button>
+    </div>
+    `).join("")}
+
+    <form 
+    class="row" 
+    id="add-header-form"
+    data-method="${endpoint.method}"
+    data-path="${endpoint.path}"
+    > 
+      <input class="row-item" name="key"> </input>
+      <input class="row-item" name="value"> </input>
+      <button 
+      type="submit"
+      > 
+        &#10004;
+      </button>
+    </form>
+		</div>
 
 		</li>
-		`,
-	)
-	.join("");
+		`
+    )
+    .join("");
 
-	list.querySelectorAll<HTMLButtonElement>(".expand-button").forEach(button => {
-		button.addEventListener("click", () => {
-			const endpoint = button.closest(".endpoint")!;
-			const body = endpoint.querySelector<HTMLElement>(".endpoint-body");
+  list.querySelectorAll<HTMLButtonElement>(".expand-button").forEach(button => {
+    button.addEventListener("click", () => {
+      const endpoint = button.closest(".endpoint")!;
+      const body = endpoint.querySelector<HTMLElement>(".endpoint-body");
 
-			if (!body) return;
+      if (!body) return;
 
-			const expanded = !body.hidden;
+      const expanded = !body.hidden;
 
-			body.hidden = expanded;
-			button.setAttribute("aria-expanded", String(!expanded));
-			button.textContent = expanded ? "▶" : "▼";
-		});
-	});
+      body.hidden = expanded;
+      button.setAttribute("aria-expanded", String(!expanded));
+      button.textContent = expanded ? "▶" : "▼";
+    });
+  });
 
-	list.querySelectorAll<HTMLButtonElement>(".delete-button").forEach(button => {
-		button.addEventListener("click", async event => {
-			event.preventDefault();
-			event.stopPropagation();
+  list.querySelectorAll<HTMLButtonElement>(".delete-button").forEach(button => {
+    button.addEventListener("click", async event => {
+      event.preventDefault();
+      event.stopPropagation();
 
-			await deleteEndpoint(
-				button.dataset.method!,
-				button.dataset.path!,
-			);
+      await deleteEndpoint(
+        button.dataset.method!,
+        button.dataset.path!,
+      );
 
-			await renderEndpoints();
-		});
-	});
+      await renderEndpoints();
+    });
+  });
+
+
+  const formUpdateBody = document.querySelector<HTMLFormElement>(
+    "#update-body-form",
+  )!;
+
+  formUpdateBody.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const formData = new FormData(formUpdateBody);
+
+    const body = formData.get("body") as string;
+    await addEndpointWithBody(
+      formUpdateBody.dataset.method!,
+      formUpdateBody.dataset.path!,
+      parseInt(formUpdateBody.dataset.responsecode!),
+      body
+    );
+
+    formUpdateBody.reset();
+
+    await renderEndpoints();
+  });
+
+  const formAddHeader = document.querySelector<HTMLFormElement>(
+    "#add-header-form",
+  )!;
+
+  formAddHeader.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const formData = new FormData(formAddHeader);
+
+    const key = formData.get("key") as string;
+    const value = formData.get("value") as string;
+
+    await addEndpointHeader(
+      formAddHeader.dataset.method!,
+      formAddHeader.dataset.path!,
+      key,
+      value,
+    );
+
+    formAddHeader.reset();
+
+    await renderEndpoints();
+  });
 }
 
 async function main() {
-	app.innerHTML = `
+  app.innerHTML = `
 	<h1>HTTP Stub</h1>
 
-	<form id="add-endpoint-form">
+	<form id="add-endpoint-form" class="endpoint-form">
 		<select id="method" name="method">
 		<option value="GET">GET</option>
 		<option value="POST">POST</option>
@@ -153,73 +241,73 @@ async function main() {
 	<ul id="endpoint-list"></ul>
 	`;
 
-	const form = document.querySelector<HTMLFormElement>(
-		"#add-endpoint-form",
-	)!;
+  const form = document.querySelector<HTMLFormElement>(
+    "#add-endpoint-form",
+  )!;
 
-	form.addEventListener("submit", async event => {
-		event.preventDefault();
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
 
-		const formData = new FormData(form);
+    const formData = new FormData(form);
 
-		const method = formData.get("method") as string;
-		const path = formData.get("path") as string;
-		const responseCode = Number(formData.get("response-code"));
-		const body = formData.get("body") as string;
+    const method = formData.get("method") as string;
+    const path = formData.get("path") as string;
+    const responseCode = Number(formData.get("response-code"));
+    const body = formData.get("body") as string;
 
-		if (body.trim() === "") {
-			await addEndpoint(method, path, responseCode);
-		} else {
-			await addEndpointWithBody(
-				method,
-				path,
-				responseCode,
-				body,
-			);
-		}
+    if (body.trim() === "") {
+      await addEndpoint(method, path, responseCode);
+    } else {
+      await addEndpointWithBody(
+        method,
+        path,
+        responseCode,
+        body,
+      );
+    }
 
-		form.reset();
+    form.reset();
 
-		await renderEndpoints();
-	});
+    await renderEndpoints();
+  });
 
-	await renderEndpoints();
-	
+  await renderEndpoints();
 
-	const saveButton = document.querySelector<HTMLButtonElement>("#save-config-button")!;
 
-	const loadButton = document.querySelector<HTMLButtonElement>("#load-config-button")!;
+  const saveButton = document.querySelector<HTMLButtonElement>("#save-config-button")!;
 
-	const fileInput = document.querySelector<HTMLInputElement>("#config-file-input")!;
+  const loadButton = document.querySelector<HTMLButtonElement>("#load-config-button")!;
 
-	saveButton.addEventListener("click", async () => {
-		const blob = await exportConfig();
+  const fileInput = document.querySelector<HTMLInputElement>("#config-file-input")!;
 
-		const url = URL.createObjectURL(blob);
+  saveButton.addEventListener("click", async () => {
+    const blob = await exportConfig();
 
-		const link = document.createElement("a");
-		link.href = url;
-		link.download = "http-stub.json";
-		link.click();
+    const url = URL.createObjectURL(blob);
 
-		URL.revokeObjectURL(url);
-	});
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "http-stub.json";
+    link.click();
 
-	loadButton.addEventListener("click", () => {
-		fileInput.click();
-	});
+    URL.revokeObjectURL(url);
+  });
 
-	fileInput.addEventListener("change", async () => {
-		const file = fileInput.files?.[0];
+  loadButton.addEventListener("click", () => {
+    fileInput.click();
+  });
 
-		if (!file) return;
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
 
-		await importConfig(file);
+    if (!file) return;
 
-		fileInput.value = "";
+    await importConfig(file);
 
-		await renderEndpoints();
-	});
+    fileInput.value = "";
+
+    await renderEndpoints();
+  });
 }
 
 main();
