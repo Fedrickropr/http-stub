@@ -1,6 +1,6 @@
 use http_stub::{
   persistence,
-  registry::{EndpointRegistry, EndpointResponse, ResponseBody},
+  registry::{EndpointRegistry, EndpointResponse, ResponseBody, ResponseHeader},
 };
 use tempfile::tempdir;
 
@@ -98,4 +98,26 @@ fn deleted_endpoint_is_not_persisted() {
 
   assert!(loaded.get("GET", "/hello").is_none());
   assert!(loaded.get("GET", "/goodbye").is_some());
+}
+
+#[test]
+fn save_and_load_with_headers() {
+  let dir = tempdir().unwrap();
+  let path = dir.path().join("stub.json");
+
+  let mut registry = EndpointRegistry::new();
+  registry.add_with_string_body("GET", "/hello", 200, "Hello world");
+  let _ = registry.add_header("GET", "/hello", "Content-Type", "application/json");
+
+  persistence::save(&path, &registry).unwrap();
+  let loaded = persistence::load(&path).unwrap();
+
+  assert_eq!(
+    loaded.get("GET", "/hello"),
+    Some(&EndpointResponse {
+      response_code: 200,
+      body: Some(ResponseBody::Text("Hello world".to_string())),
+      headers: vec![ResponseHeader {key: "Content-Type".to_string(), value: "application/json".to_string()}]
+    })
+  );
 }

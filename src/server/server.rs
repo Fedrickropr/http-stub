@@ -72,9 +72,17 @@ impl Server {
   fn build_response(response: &EndpointResponse) -> Response {
     let status = StatusCode::from_u16(response.response_code).unwrap();
 
-    match &response.body {
-      Some(ResponseBody::Text(body)) => (status, body.clone()).into_response(),
+    let mut req_response = match &response.body {
+      Some(ResponseBody::Text(body)) => {
+        let mut req_response = (status, body.clone()).into_response();
+        req_response.headers_mut().extend(response.header_map());
+        req_response
+      }
       None => (status, "").into_response(),
-    }
+    };
+
+    req_response.headers_mut().extend(response.header_map());
+
+    req_response
   }
 }

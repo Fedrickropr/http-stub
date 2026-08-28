@@ -62,7 +62,7 @@ struct AddHeaderRequest {
 struct DeleteHeaderRequest {
   method: String,
   path: String,
-  key: String
+  key: String,
 }
 
 pub fn router() -> Router<AppState> {

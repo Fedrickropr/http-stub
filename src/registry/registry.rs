@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
@@ -12,12 +13,26 @@ pub struct EndpointKey {
   pub method: String,
   pub path: String,
 }
-
+	
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct EndpointResponse {
   pub response_code: u16,
   pub body: Option<ResponseBody>,
   pub headers: Vec<ResponseHeader>,
+}
+
+impl EndpointResponse {
+  pub fn header_map(&self) -> HeaderMap {
+    self.headers
+      .iter()
+      .map(|header| {
+        (
+          HeaderName::from_bytes(header.key.as_bytes()).unwrap(),
+          HeaderValue::from_str(&header.value).unwrap(),
+        )
+      })
+      .collect()
+  }
 }
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
@@ -57,27 +72,30 @@ impl EndpointRegistry {
   }
 
   pub fn add_with_string_body(&mut self, method: &str, path: &str, response_code: u16, body: &str) {
-		let key = EndpointKey {
-        method: method.to_string(),
-        path: path.to_string()
-      };
+    let key = EndpointKey {
+      method: method.to_string(),
+      path: path.to_string(),
+    };
 
-		match self.endpoints.get_mut(&key) {
-			Some(endpoint) => {
-				endpoint.body = Some(ResponseBody::Text(body.to_string()));
-				endpoint.response_code = response_code;
-			},
-			None => _ = self.endpoints.insert(
-				EndpointKey {
-					method: method.to_string(),
-					path: path.to_string(),
-				},
-				EndpointResponse {
-					response_code: response_code,
-					body: Some(ResponseBody::Text(body.to_string())),
-					headers: Vec::new()
-				})
-		};
+    match self.endpoints.get_mut(&key) {
+      Some(endpoint) => {
+        endpoint.body = Some(ResponseBody::Text(body.to_string()));
+        endpoint.response_code = response_code;
+      }
+      None => {
+        _ = self.endpoints.insert(
+          EndpointKey {
+            method: method.to_string(),
+            path: path.to_string(),
+          },
+          EndpointResponse {
+            response_code: response_code,
+            body: Some(ResponseBody::Text(body.to_string())),
+            headers: Vec::new(),
+          },
+        )
+      }
+    };
   }
 
   pub fn add(&mut self, method: &str, path: &str, response_code: u16) {
@@ -139,8 +157,8 @@ impl EndpointRegistry {
       })?,
     };
 
-		let index = response.headers.iter().position(|x| x.key == key).unwrap();
-		response.headers.remove(index);
+    let index = response.headers.iter().position(|x| x.key == key).unwrap();
+    response.headers.remove(index);
 
     Ok(())
   }

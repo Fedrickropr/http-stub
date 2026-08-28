@@ -1,26 +1,20 @@
 use std::{fs, io, path::Path};
 
-use serde::{Deserialize, Serialize};
-
-use crate::registry::{EndpointRegistry, ResponseBody};
-
-#[derive(Serialize, Deserialize)]
-struct PersistedEndpoint {
-  method: String,
-  path: String,
-  response_code: u16,
-  body: Option<ResponseBody>,
-}
+use crate::{
+  management_api::Endpoint,
+  registry::{EndpointRegistry, ResponseBody},
+};
 
 pub fn serialize(registry: &EndpointRegistry) -> Result<String, serde_json::Error> {
   let endpoints: Vec<_> = registry
     .endpoints()
     .iter()
-    .map(|(key, response)| PersistedEndpoint {
+    .map(|(key, response)| Endpoint {
       method: key.method.clone(),
       path: key.path.clone(),
       response_code: response.response_code,
       body: response.body.clone(),
+      headers: response.headers.clone(),
     })
     .collect();
 
@@ -28,18 +22,24 @@ pub fn serialize(registry: &EndpointRegistry) -> Result<String, serde_json::Erro
 }
 
 pub fn deserialize(data: &str) -> Result<EndpointRegistry, serde_json::Error> {
-  let endpoints: Vec<PersistedEndpoint> = serde_json::from_str(data)?;
+  let endpoints: Vec<Endpoint> = serde_json::from_str(data)?;
 
   let mut registry = EndpointRegistry::new();
 
   for endpoint in endpoints {
     match endpoint.body {
-      Some(ResponseBody::Text(body)) => registry.add_with_string_body(
-        &endpoint.method,
-        &endpoint.path,
-        endpoint.response_code,
-        &body,
-      ),
+      Some(ResponseBody::Text(body)) => {
+        registry.add_with_string_body(
+          &endpoint.method,
+          &endpoint.path,
+          endpoint.response_code,
+          &body,
+        );
+        for header in endpoint.headers {
+          // Ignore - can't error
+          let _ = registry.add_header(&endpoint.method, &endpoint.path, &header.key, &header.value);
+        }
+      }
       None => registry.add(&endpoint.method, &endpoint.path, endpoint.response_code),
     }
   }
